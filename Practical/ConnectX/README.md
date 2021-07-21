@@ -2,4 +2,8 @@
 
 https://www.kaggle.com/c/connectx
 
-I like this game because it's simple but not too simple. Perfect for testing new ideas. I plan to split my time between Intro to RL book and practical problems such as this one. If ConnectX goes well, I might try other games or some more unique problems.
+### Worth reading:
+
+Interactive Deep Q-Learning in Google Colab - https://www.kaggle.com/c/connectx/discussion/129145
+
+AlphaZero - https://www.kaggle.com/connect4alphazero/alphazero-baseline-connectx/
