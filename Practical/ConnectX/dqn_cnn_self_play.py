@@ -16,17 +16,17 @@ from torch import tensor
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common.callbacks import EvalCallback, BaseCallback, CheckpointCallback
 from stable_baselines3.common.vec_env import DummyVecEnv, VecTransposeImage
-from stable_baselines3 import PPO
+from stable_baselines3 import DQN
 from typing import Callable
 from stable_baselines3.common.vec_env import sync_envs_normalization
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.torch_layers import BaseFeaturesExtractor
 
-LOGDIR = os.path.join(".","ppo_cnn_self_play_logs")
-MONITOR_LOGS_DIR = os.path.join(LOGDIR,"monitor_logs")
+
+MODEL_NAME = "dqn_cnn_self_play"
+LOGDIR = os.path.join(".", MODEL_NAME, "logs")
 TB_LOGS_DIR = os.path.join(LOGDIR,"tensorboard_logs")
 MODEL_DIR = os.path.join(".","models")
-CHECKPOINTS_DIR = os.path.join(LOGDIR,"checkpoints")
 
 # divides board into 3 channels - https://www.kaggle.com/c/connectx/discussion/168246
 # first channel: player 1 pieces
@@ -71,7 +71,7 @@ def transform_board(board, mark):
     return board
 
 class ConnectFourGym:
-    def __init__(self, agent2="random", warmup_timesteps = 100_000):
+    def __init__(self, agent2="random", warmup_timesteps = 100_000, is_eval=False):
         self.env  = make("connectx", debug=True)
         self.trainer = self.env.train([None, agent2])
         self.rows = self.env.configuration.rows
@@ -91,6 +91,7 @@ class ConnectFourGym:
         self.warmup_timesteps = warmup_timesteps
         self.play_first = True
         self.agent2 = agent2
+        self.is_eval = is_eval
 
     def reset(self):
         self.episode_count += 1
@@ -124,7 +125,7 @@ class ConnectFourGym:
         if self.timesteps < self.warmup_timesteps:
             return True
         print("steps: " + str(self.timesteps) + ", loading new opponent")
-        loaded_model = PPO.load(os.path.join(MODEL_DIR, "ppo_cnn_self_play")) 
+        loaded_model = DQN.load(os.path.join(MODEL_DIR, MODEL_NAME)) 
         
         def agent_opponent(obs, config):
             # Use the best model to select a column
@@ -144,6 +145,31 @@ class ConnectFourGym:
         
         self.agent2 = agent_opponent
         self.reset()
+
+
+    # TODO: rewrite this
+    def load_new_opponent_for_eval(self):
+        if not self.is_eval:
+            print('not eval env')
+            return False
+        eval_model = DQN.load(os.path.join(MODEL_DIR, MODEL_NAME)) 
+        
+        def eval_agent_opponent(obs, config):
+            # Use the best model to select a column
+            board_2d = np.array(obs['board']).reshape(1,6,7)
+            board_3c = transform_board(board_2d, obs.mark)
+            col, _ = eval_model.predict(board_3c, deterministic=True)
+            # Check if selected column is valid
+            is_valid = (obs['board'][int(col)] == 0)
+            # If not valid, select random move. 
+            if is_valid:
+                return int(col)
+            else:
+                return random.choice([col for col in range(config.columns) if obs.board[int(col)] == 0])
+        
+        self.agent2 = eval_agent_opponent
+        self.reset()
+
     
     def change_trainer(self):
         if self.play_first:
@@ -166,6 +192,8 @@ class ModifiedEvalCallback(EvalCallback):
     def _on_step(self) -> bool:
 
         if self.eval_freq > 0 and self.n_calls % self.eval_freq == 0:
+            self.eval_env.env_method(method_name='load_new_opponent_for_eval') 
+
             # Sync training and eval env if there is VecNormalize
             sync_envs_normalization(self.training_env, self.eval_env)
 
@@ -231,7 +259,7 @@ class ModifiedEvalCallback(EvalCallback):
                 if self.verbose > 0:
                     print("Mean reward > 0.7")
                 if self.best_model_save_path is not None:
-                    self.model.save(os.path.join(self.best_model_save_path, "ppo_cnn_self_play"))
+                    self.model.save(os.path.join(self.best_model_save_path, MODEL_NAME))
                 self.best_mean_reward = mean_reward
                 # Trigger callback if needed
                 if self.callback is not None:
@@ -269,7 +297,7 @@ class Net(BaseFeaturesExtractor):
         return x
 
 env = Monitor(ConnectFourGym())
-eval_env = DummyVecEnv([lambda:Monitor(ConnectFourGym())])
+eval_env = DummyVecEnv([lambda:Monitor(ConnectFourGym(is_eval=True))])
 
 load_new_opponent_from_best_model_callback = LoadNewOpponentFromBestModelCallback(env)
 
@@ -277,25 +305,30 @@ modified_eval_callback = ModifiedEvalCallback(eval_env, best_model_save_path=MOD
                              log_path=LOGDIR, eval_freq=1000,
                              deterministic=True, render=False
                             , callback_on_new_best=load_new_opponent_from_best_model_callback,
-                                     verbose=1, n_eval_episodes=100)
+                                     verbose=1, n_eval_episodes=30)
 
 policy_kwargs = {
     'activation_fn':th.nn.ReLU, 
-    'net_arch':[64, dict(pi=[32, 16], vf=[32, 16])],
+    #'net_arch':[64, dict(pi=[32, 16], vf=[32, 16])],
     'features_extractor_class':Net,
     'normalize_images':False
 }
 
-model = PPO(policy = 'MlpPolicy', env=env, verbose=0, policy_kwargs=policy_kwargs, tensorboard_log =
-            TB_LOGS_DIR, n_epochs=5, batch_size=128)
+model = DQN(policy = 'MlpPolicy', env=env, verbose=0, policy_kwargs=policy_kwargs, tensorboard_log =
+            TB_LOGS_DIR, batch_size=64, exploration_final_eps=0.1, exploration_fraction=0.05,
+            buffer_size=100_000)
 
+model.save(os.path.join(MODEL_DIR, MODEL_NAME)) # first opponent for eval env
 
+# It gets stuck at first, not sure why. After ~50k steps, it begins to learn.
+# It could be due to high exploration, but I'd expect to see some variation in
+# rewards/episode length
 start_time = time.time()
-model.learn(total_timesteps=500_000, callback=[modified_eval_callback])
+model.learn(total_timesteps=1_500_000, callback=[modified_eval_callback])
 end_time = time.time()
 print('training took ' + str((end_time - start_time)/3600) + ' hours')
 
-model = PPO.load(os.path.join(MODEL_DIR, "ppo_cnn_self_play")) 
+model = DQN.load(os.path.join(MODEL_DIR, MODEL_NAME)) 
 def agent1(obs, config):
     board_2d = np.array(obs['board']).reshape(1,6,7)
     board_3c = transform_board(board_2d, obs.mark)
