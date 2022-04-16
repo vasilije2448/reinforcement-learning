@@ -314,17 +314,15 @@ policy_kwargs = {
     'normalize_images':False
 }
 
-model = DQN(policy = 'MlpPolicy', env=env, verbose=0, policy_kwargs=policy_kwargs, tensorboard_log =
-            TB_LOGS_DIR, batch_size=64, exploration_final_eps=0.1, exploration_fraction=0.05,
-            buffer_size=100_000)
+#model = DQN(policy = 'MlpPolicy', env=env, verbose=0, policy_kwargs=policy_kwargs, tensorboard_log =
+#            TB_LOGS_DIR, batch_size=64, exploration_final_eps=0.1, exploration_fraction=0.05,
+#            buffer_size=100_000)
 
-model.save(os.path.join(MODEL_DIR, MODEL_NAME)) # first opponent for eval env
-
-# It gets stuck at first, not sure why. After ~50k steps, it begins to learn.
-# It could be due to high exploration, but I'd expect to see some variation in
-# rewards/episode length
+#model.save(os.path.join(MODEL_DIR, MODEL_NAME)) # first opponent for eval env
+model = DQN.load(os.path.join(MODEL_DIR, MODEL_NAME))
+model.set_env(env)
 start_time = time.time()
-model.learn(total_timesteps=1_500_000, callback=[modified_eval_callback])
+model.learn(total_timesteps=2_000_000, callback=[modified_eval_callback])
 end_time = time.time()
 print('training took ' + str((end_time - start_time)/3600) + ' hours')
 
