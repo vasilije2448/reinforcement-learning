@@ -5,6 +5,7 @@ import time
 import os
 import pickle
 from logger import logger, init_logger
+from multiprocessing import Process, Queue
 
 class Node:
     def __init__(self, state, parent, player_id, action, game_over, result):
@@ -22,12 +23,15 @@ class Node:
 # expansion
 # simulation
 # backpropagation
-def mcts(env, my_player_id, num_games=100):
+def mcts_process(env, my_player_id, max_time, queue):
+    start_time = time.time()
     opponent_player_id = 1 if my_player_id == 2 else 2
     env.state[my_player_id-1].status = 'ACTIVE'
     env.state[opponent_player_id-1].status = 'INACTIVE'
     root = Node(env.state[0], None, opponent_player_id, None, False, 0)
-    for j in range(num_games):
+    while (
+        time.time() - start_time < max_time
+    ):
         # Selection
         selected_node = _select_node(root)
         if not selected_node.game_over:
@@ -64,8 +68,34 @@ def mcts(env, my_player_id, num_games=100):
                 
             selected_node = selected_node.parent
     best_root_child = max(root.children, key=lambda x: x.num_wins/x.num_visits)
-    return best_root_child.action
-    
+    queue.put(root.children)
+
+
+# multiprocessing: https://stackoverflow.com/a/45829852
+def mcts(env, my_player_id, num_cpu, max_time):
+    q = Queue()
+    processes = []
+    rets = []
+    for _ in range(num_cpu):
+        p = Process(target=mcts_process, args=(env, my_player_id, max_time, q))
+        processes.append(p)
+        p.start()
+    for p in processes:
+        ret = q.get()
+        rets.append(ret)
+    for p in processes:
+        p.join()
+    action_to_num_wins = [0]*7
+    action_to_num_visits = [1]*7
+    for root_children in rets:
+        for ch in root_children:
+            action_to_num_wins[ch.action] += ch.num_wins
+            action_to_num_visits[ch.action] += ch.num_visits
+    action_to_wr = [0]*7
+    for i in range(7):
+        action_to_wr[i] = action_to_num_wins[i] / action_to_num_visits[i]
+    return np.argmax(action_to_wr)
+
 def _select_node(root):
     selected_node = root
     while selected_node.children:
