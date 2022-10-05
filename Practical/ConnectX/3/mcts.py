@@ -56,8 +56,8 @@ def _get_gameovers():
 GAMEOVERS = _get_gameovers() # masks of every possible win position
 LEGAL_MOVES_CACHE = np.array([
     [
-        1 << (6-j) & i == 0
-        for j in range(NUM_COLUMNS)
+        1 << j & i == 0
+        for j in range(NUM_COLUMNS-1, -1, -1)
     ]
     for i in range(2**NUM_COLUMNS)
 ], dtype=np.int8)
@@ -96,9 +96,9 @@ def _get_bitboard(observation):
     b1 = 0
     b2 = 0
     for i in range(NUM_ROWS * NUM_COLUMNS): 
-        if observation.board[-i] == 0:
+        if observation.board[NUM_ROWS * NUM_COLUMNS - 1 - i] == 0:
             continue
-        elif observation.board[-i] == 1:
+        elif observation.board[NUM_ROWS * NUM_COLUMNS - 1 - i] == 1:
             current_bit_mask = 1 << i
             b1 |= current_bit_mask
         else:
@@ -243,11 +243,8 @@ def mcts(observation, num_cpu, max_time):
     action_to_wr = [0]*7
     for i in range(7):
         action_to_wr[i] = action_to_num_wins[i] / action_to_num_visits[i]
+        logger.info(f'''action {i}\n\twr:{action_to_wr[i]}\n\tnum_visits:{action_to_num_visits[i]}\n\tnum_wins: {action_to_num_wins[i]}''')
     max_action = np.argmax(action_to_wr)
-    if max_action == 6:
-        max_action = 0
-    else:
-        max_action += 1
     return max_action
 
 def _select_node(root):
@@ -267,7 +264,7 @@ def _uct_value(node, parent):
 
 
 def _find_index(bitboard, move):
-    move = 6 - move
+    move = NUM_COLUMNS - 1 - move
     for row in range(NUM_ROWS):
         current_index = move + row*NUM_COLUMNS
         m = 1 << current_index
@@ -385,6 +382,19 @@ class TestBitboardFunctions(unittest.TestCase):
         self.assertTrue(_legal_move(occupancy, 2))
         self.assertFalse(_legal_move(occupancy, 4))
         self.assertTrue(_legal_move(occupancy, 6))
+    
+    def test_legal_move_2(self):
+        bitboard = np.array([0,0], dtype=np.int64)
+        bitboard[0] = 2129766907903
+        occupancy = bitboard[0]
+        self.assertTrue(_legal_move(occupancy, 0))
+        self.assertFalse(_legal_move(occupancy, 1))
+        self.assertFalse(_legal_move(occupancy, 2))
+        self.assertFalse(_legal_move(occupancy, 3))
+        self.assertFalse(_legal_move(occupancy, 4))
+        self.assertTrue(_legal_move(occupancy, 5))
+        self.assertFalse(_legal_move(occupancy, 6))
+
 
     def test_find_index_1(self):
         bitboard = np.array([0,0], dtype=np.int64)
@@ -401,7 +411,6 @@ class TestBitboardFunctions(unittest.TestCase):
         bitboard = np.array([0,0], dtype=np.int64)
         bitboard[0] = 127
         self.assertEqual(_find_index(bitboard, 0), 13)
-
 
     def test_play_move(self):
         bitboard = np.array([0,0], dtype=np.int64)

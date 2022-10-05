@@ -3,7 +3,7 @@ import logging
 
 FILE = "game.log"
 LEVEL = logging.DEBUG
-LOGGING_ENABLED = False
+LOGGING_ENABLED = True
 
 
 class _FileHandler(logging.FileHandler):
