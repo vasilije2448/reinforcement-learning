@@ -1,5 +1,3 @@
-Monte Carlo Tree Search
+# Monte Carlo Tree Search
 
-TODO:
-- make mcts fast
-- add neural net
+Uses multiprocessing for root parallelization.
