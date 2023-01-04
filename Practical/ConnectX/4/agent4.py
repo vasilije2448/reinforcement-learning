@@ -35,8 +35,6 @@ class Agent4:
         action_probabilities *= valids
         return action_probabilities.argmax().item()
 
-
-
 def train(train_args, train_net_args, net_wrapper):
     for iteration in tqdm(range(train_args.num_iterations), desc='Iteration'):
         dataset = self_play(train_args, net_wrapper) # generate training data
@@ -86,10 +84,12 @@ def mcts(bitboard, player_id, num_simulations, net_wrapper):
             selected_node.Q = selected_node.W_v / selected_node.N
             V = 1 - V
             selected_node = selected_node.parent
-    action_to_wr = [0]*NUM_COLUMNS
+
+    action_to_num_visits = np.zeros(NUM_COLUMNS)
     for ch in root.children:
-        action_to_wr[ch.action] = ch.W_v / (ch.N + 1)
-    return action_to_wr
+        action_to_num_visits[ch.action] = ch.N
+    action_probabilities = action_to_num_visits / np.sum(action_to_num_visits)
+    return action_probabilities
 
 def run_episodes_process(num_episodes, num_mcts_simulations, epsilon, net_wrapper, queue):
     states_list = []
