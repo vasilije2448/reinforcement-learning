@@ -4,6 +4,7 @@ from torch.utils.data import DataLoader
 import torch.optim as optim
 import numpy as np
 from constants import NUM_ROWS, NUM_COLUMNS
+from util import bitboard_to_kaggle_state
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -82,6 +83,9 @@ class NetWrapper():
         self.net.load_state_dict(torch.load(path))
         self.net.eval()
 
+    def eval(self):
+        self.net.eval()
+
     def get_state(self, bitboard, player_id):
         """
         layer 1 for current player's pieces
@@ -103,7 +107,7 @@ class NetWrapper():
                 player1_occupies = int((not player2_occupies) & square_occupied)
                 layer1[i,j] = player1_occupies
                 layer2[i,j] = player2_occupies
-                layer3[i,j] = square_occupied
+                layer3[i,j] = square_occupied ^ 1
 
         if player_id == 1:
             board = np.array([[layer1, layer2, layer3]])
@@ -111,9 +115,6 @@ class NetWrapper():
             board = np.array([[layer2, layer1, layer3]])
 
         return torch.tensor(board).to(device, dtype=torch.float32)
-
-    def get_state_kaggle(self, kaggle_observation):
-        return None
 
     def predict(self, state):
         pi, v = self.net.forward(state.unsqueeze(0))
