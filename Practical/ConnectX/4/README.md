@@ -6,9 +6,7 @@ Work in progress. TODO:
 
 2) Improve neural net training.
 
-3) Better exploration.
-
-4) Rewrite in C++?
+3) Rewrite in C++?
 
 #### Known issues:
 

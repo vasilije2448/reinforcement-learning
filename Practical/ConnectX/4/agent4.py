@@ -11,16 +11,19 @@ from tqdm import tqdm
 from logger import logger, init_logger
 from game import legal_move, get_valids, play_move, is_game_over, starting_bitboard
 from neural_net import NetWrapper, Net
-from util import kaggle_state_to_bitboard
+from util import kaggle_state_to_bitboard, get_win_percentages_kaggle
 from constants import NUM_COLUMNS
 
 
 TrainArgs = namedtuple('TrainArgs', ['num_iterations', 'num_episodes', 'num_mcts_simulations',
-                       'epsilon', 'num_cpu'], defaults=(100, 1000, 200, 0.3, 4))
+                       'num_cpu'], defaults=(100, 1000, 200, 4))
 TrainNetArgs = namedtuple('TrainNetArgs', ['num_epochs', 'batch_size', 'learning_rate'],
                           defaults=(20, 1024, 0.01))
 
 CPUCT = 2
+DIRICHLET_ALPHA = 1
+DIRICHLET_NOISE_WEIGHT = 0.25
+
 
 class Agent4:
     def __init__(self, net_wrapper, num_mcts_simulations):
@@ -51,8 +54,7 @@ def self_play(train_args, net_wrapper):
     episodes_per_process = train_args.num_episodes // train_args.num_cpu
     for _ in range(train_args.num_cpu):
         p = Process(target=run_episodes_process, args=(episodes_per_process,
-                                                        train_args.num_mcts_simulations, train_args.epsilon, net_wrapper,
-                                                        q))
+                                                        train_args.num_mcts_simulations, net_wrapper, q))
         processes.append(p)
         p.start()
     for p in processes:
@@ -91,7 +93,7 @@ def mcts(bitboard, player_id, num_simulations, net_wrapper):
     action_probabilities = action_to_num_visits / np.sum(action_to_num_visits)
     return action_probabilities
 
-def run_episodes_process(num_episodes, num_mcts_simulations, epsilon, net_wrapper, queue):
+def run_episodes_process(num_episodes, num_mcts_simulations, net_wrapper, queue):
     states_list = []
     action_probabilities_list = []
     values_list = []
@@ -109,6 +111,7 @@ def run_episodes_process(num_episodes, num_mcts_simulations, epsilon, net_wrappe
 
             valids = get_valids(bitboard)
             action_probabilities *= valids
+            add_dirichlet_noise(action_probabilities)
             s = action_probabilities.sum(0)
             if s == 0:
                 game_over = True
@@ -123,12 +126,7 @@ def run_episodes_process(num_episodes, num_mcts_simulations, epsilon, net_wrappe
             flipped_state = flip(transformed_state, 3)
             episode_experience.append((transformed_state.cpu(), action_probabilities))
 
-            exploratory_action = np.random.choice(NUM_COLUMNS, p=action_probabilities.numpy())
-            greedy_action = action_probabilities.argmax().item()
-            if random.random() < epsilon:
-                action_to_play = exploratory_action
-            else:
-                action_to_play = greedy_action
+            action_to_play = np.random.choice(NUM_COLUMNS, p=action_probabilities.numpy())
 
             bitboard = play_move(bitboard, action_to_play, player_id)
             game_over, result = is_game_over(bitboard, player_id)
@@ -197,6 +195,14 @@ def expand(node, net_wrapper):
             child = Node(node.state, i, 0, 0, node, game_over, other_player_id, result)
         node.children.append(child)
     return 1 - V
+
+def add_dirichlet_noise(action_probabilities):
+    noise = np.random.dirichlet(alpha=[DIRICHLET_ALPHA] * NUM_COLUMNS)
+    for i in range(NUM_COLUMNS):
+        if action_probabilities[i] == 0: # illegal action
+            continue
+        else:
+            action_probabilities[i] = (1 - DIRICHLET_NOISE_WEIGHT) * action_probabilities[i] + DIRICHLET_NOISE_WEIGHT * noise[i]
 
 class Node:
     def __init__(self, state, action, P, first_play_urgency, parent, game_over, player_id, result):

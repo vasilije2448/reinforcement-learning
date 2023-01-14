@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from constants import NUM_ROWS, NUM_COLUMNS
 from game import starting_bitboard, is_game_over, play_move
+from kaggle_environments import make, evaluate
 
 device = 'cpu'
 
@@ -153,3 +154,18 @@ def kaggle_state_to_train_state(kaggle_state):
         board = np.array([[layer2, layer1, layer3]])
 
     return torch.tensor(board).to(device, dtype=torch.float32)
+
+def get_win_percentages_kaggle(agent1, agent2, n_rounds=10):
+    """
+    Returns agent1's win percentage
+    """
+    # Use default Connect Four setup
+    config = {'rows': 6, 'columns': 7, 'inarow': 4}
+    # Agent 1 goes first (roughly) half the time          
+    outcomes = evaluate("connectx", [agent1, agent2], config, [], n_rounds//2)
+    # Agent 2 goes first (roughly) half the time      
+    outcomes += [[b,a] for [a,b] in evaluate("connectx", [agent2, agent1], config, [], n_rounds-n_rounds//2)]
+    print("Agent 1 Win Percentage:", np.round(outcomes.count([1,-1])/len(outcomes), 4))
+    print("Agent 2 Win Percentage:", np.round(outcomes.count([-1,1])/len(outcomes), 4))
+    print("Percentage of Invalid Plays by Agent 1:", int(outcomes.count([None, 0])/n_rounds*100))
+    print("Percentage of Invalid Plays by Agent 2:", int(outcomes.count([0, None])/n_rounds*100))
