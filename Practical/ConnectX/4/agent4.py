@@ -188,15 +188,15 @@ def expand(node, net_wrapper):
         if valids[i]:
             new_bitboard = play_move(node.state, i, node.player_id)
             game_over, result = is_game_over(new_bitboard, node.player_id)
-            if game_over and V != 1:
-                V = torch.tensor([result])
-            child = Node(new_bitboard, i, Pi[i].item(), V, node, game_over, other_player_id, result)
+            if result == 1:
+                V = torch.tensor([0])
+            child = Node(new_bitboard, i, Pi[i].item(), 0.5, node, game_over, other_player_id, result)
         else:
             game_over = True
-            result = 1 if node.player_id == 1 else 0
-            child = Node(node.state, i, 0, V, node, game_over, other_player_id, result)
+            result = 0
+            child = Node(node.state, i, 0, 0, node, game_over, other_player_id, result)
         node.children.append(child)
-    return V
+    return 1 - V
 
 class Node:
     def __init__(self, state, action, P, first_play_urgency, parent, game_over, player_id, result):
