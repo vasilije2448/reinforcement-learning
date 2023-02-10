@@ -1,0 +1,3 @@
+[submodule "Nichess/nichess-cpp"]
+	path = Nichess/nichess-cpp
+	url = https://github.com/nichess-game/nichess-cpp
