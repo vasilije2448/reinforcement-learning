@@ -8,11 +8,12 @@
 #include <map>
 
 #include "nichess/nichess.hpp"
+#include "nichess_wrapper.hpp"
 #include "agent1.hpp"
 
 using namespace nichess;
 
-void myMove(Game& game) {
+void myMove(nichess_wrapper::GameWrapper& gameWrapper) {
     int x1, y1, x2, y2, x3, y3, x4, y4;
     std::cout << "Enter move's source x coordinate (-1 for MOVE_SKIP): ";
     std::cin >> x1;
@@ -50,36 +51,36 @@ void myMove(Game& game) {
       abilityDstIdx = coordinatesToBoardIndex(x4, y4);
     }
 
-    if(game.isActionLegal(moveSrcIdx, moveDstIdx, abilitySrcIdx, abilityDstIdx)) {
-      game.makeAction(moveSrcIdx, moveDstIdx, abilitySrcIdx, abilityDstIdx);
+    if(gameWrapper.game.isActionLegal(moveSrcIdx, moveDstIdx, abilitySrcIdx, abilityDstIdx)) {
+      gameWrapper.game.makeAction(moveSrcIdx, moveDstIdx, abilitySrcIdx, abilityDstIdx);
     } else {
       std::cout << "Illegal action. Try again.\n";
-      game.print();
-      myMove(game);
+      gameWrapper.game.print();
+      myMove(gameWrapper);
     }
 }
 
 int main() {
   bool gameOver = false;
-  Game game = Game();
+  nichess_wrapper::GameWrapper gameWrapper = nichess_wrapper::GameWrapper();
   agent1::Agent1 opponent = agent1::Agent1();
-  game.print();
+  gameWrapper.game.print();
   while(!gameOver) {
-    if(game.getCurrentPlayer() == PLAYER_1) {
+    if(gameWrapper.game.getCurrentPlayer() == PLAYER_1) {
       std::cout << "Player to move: PLAYER_1 (upper-case letters)\n";
     } else {
       std::cout << "Player to move: PLAYER_2 (lower-case letters)\n";
     }
-    myMove(game);
-    gameOver = game.gameOver();
+    myMove(gameWrapper);
+    gameOver = gameWrapper.game.gameOver();
     if(!gameOver) {
-      PlayerAction oa = opponent.computeAction(game, 2);
-      game.makeAction(oa.moveSrcIdx, oa.moveDstIdx, oa.abilitySrcIdx, oa.abilityDstIdx);
-      gameOver = game.gameOver();
+      PlayerAction oa = opponent.computeAction(gameWrapper, 3);
+      gameWrapper.game.makeAction(oa.moveSrcIdx, oa.moveDstIdx, oa.abilitySrcIdx, oa.abilityDstIdx);
+      gameOver = gameWrapper.game.gameOver();
     }
-    game.print();
+    gameWrapper.game.print();
   }
-  std::optional<Player> winner = game.winner();
+  std::optional<Player> winner = gameWrapper.game.winner();
   if(winner) {
     if(winner.value() == PLAYER_1) {
       std::cout << "Player 1 won\n";

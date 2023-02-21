@@ -6,5 +6,6 @@ add_executable(
   ${PROJECT_NAME}
   1/play_vs_agent.cpp
   1/agent1.cpp
+  1/nichess_wrapper.cpp
   )
 target_link_libraries(play_vs_agent nichess)

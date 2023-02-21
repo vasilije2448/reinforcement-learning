@@ -8,6 +8,7 @@
 #include <assert.h>
 
 #include "nichess/nichess.hpp"
+#include "nichess_wrapper.hpp"
 #include "agent1.hpp"
 
 using namespace nichess;
@@ -261,9 +262,9 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
 /*
  * Returns value of the current position, relative to the player.
  */
-float agent1::Agent1::positionValue(Game& game, Player player) {
+float agent1::Agent1::positionValue(nichess_wrapper::GameWrapper& gameWrapper, Player player) {
   float retval = 0;
-  std::vector<Piece*> p1Pieces = game.getAllPiecesByPlayer(PLAYER_1);
+  std::vector<Piece*> p1Pieces = gameWrapper.game.getAllPiecesByPlayer(PLAYER_1);
   for(Piece* p : p1Pieces) {
     if(p->healthPoints <= 0) {
       retval -= pieceTypeToValueMultiplier(p->type) * 100;
@@ -274,7 +275,7 @@ float agent1::Agent1::positionValue(Game& game, Player player) {
     //retval += indexToP1SquareValueMap[p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
     retval += 0.02 * pieceTypeToIndexToSquareValue[p->type][p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
   }
-  std::vector<Piece*> p2Pieces = game.getAllPiecesByPlayer(PLAYER_2);
+  std::vector<Piece*> p2Pieces = gameWrapper.game.getAllPiecesByPlayer(PLAYER_2);
   for(Piece* p : p2Pieces) {
     if(p->healthPoints <= 0) {
       retval += pieceTypeToValueMultiplier(p->type) * 100;
@@ -290,26 +291,26 @@ float agent1::Agent1::positionValue(Game& game, Player player) {
   return m * retval;
 }
 
-float agent1::Agent1::minimax(Game& game, int depth, bool maximizingPlayer, Player startingPlayer) {
-  if(depth == 0 || game.gameOver()) {
-    return positionValue(game, startingPlayer);
+float agent1::Agent1::minimax(nichess_wrapper::GameWrapper& gameWrapper, int depth, bool maximizingPlayer, Player startingPlayer) {
+  if(depth == 0 || gameWrapper.game.gameOver()) {
+    return positionValue(gameWrapper, startingPlayer);
   }
   if(maximizingPlayer) {
-    std::vector<PlayerAction> ala = game.usefulLegalActions();
+    std::vector<PlayerAction> ala = gameWrapper.usefulLegalActionsWithoutWalls();
     float value = -std::numeric_limits<float>::max();
     for(PlayerAction pa : ala) {
-      game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
-      value = std::max(value, minimax(game, depth - 1, false, startingPlayer));
-      game.undoLastAction();
+      gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
+      value = std::max(value, minimax(gameWrapper, depth - 1, false, startingPlayer));
+      gameWrapper.game.undoLastAction();
     }
     return value;
   } else {
-    std::vector<PlayerAction> ala = game.usefulLegalActions();
+    std::vector<PlayerAction> ala = gameWrapper.usefulLegalActionsWithoutWalls();
     float value = std::numeric_limits<float>::max();
     for(PlayerAction pa : ala) {
-      game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
-      value = std::min(value, minimax(game, depth - 1, true, startingPlayer));
-      game.undoLastAction();
+      gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
+      value = std::min(value, minimax(gameWrapper, depth - 1, true, startingPlayer));
+      gameWrapper.game.undoLastAction();
     }
     return value;
 
@@ -320,21 +321,21 @@ agent1::Agent1::Agent1() {
   pieceTypeToIndexToSquareValue = createPieceTypeToIndexToSquareValue();
 }
 
-PlayerAction agent1::Agent1::computeAction(Game& game, int searchDepth) {
+PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWrapper, int searchDepth) {
   assert(searchDepth > 0);
-  std::vector<PlayerAction> ala = game.usefulLegalActions();
+  std::vector<PlayerAction> ala = gameWrapper.usefulLegalActionsWithoutWalls();
   float bestValue = -std::numeric_limits<float>::max();
   PlayerAction bestAction = ala[0];
   float value;
-  Player startingPlayer = game.getCurrentPlayer();
+  Player startingPlayer = gameWrapper.game.getCurrentPlayer();
   for(PlayerAction pa : ala) {
-    game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
-    value = minimax(game, searchDepth - 1, false, startingPlayer);
+    gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
+    value = minimax(gameWrapper, searchDepth - 1, false, startingPlayer);
     if(value > bestValue) {
       bestValue = value;
       bestAction = pa;
     }
-    game.undoLastAction();
+    gameWrapper.game.undoLastAction();
   }
 
   return bestAction;
