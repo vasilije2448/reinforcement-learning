@@ -13,6 +13,8 @@
 
 using namespace nichess;
 
+int numNodes = 0;
+
 float pieceTypeToValueMultiplier(PieceType pt) {
   switch(pt) {
     case P1_KING:
@@ -291,7 +293,7 @@ float agent1::Agent1::positionValue(nichess_wrapper::GameWrapper& gameWrapper, P
   return m * retval;
 }
 
-float agent1::Agent1::minimax(nichess_wrapper::GameWrapper& gameWrapper, int depth, bool maximizingPlayer, Player startingPlayer) {
+float agent1::Agent1::alphabeta(nichess_wrapper::GameWrapper& gameWrapper, float alpha, float beta, int depth, bool maximizingPlayer, Player startingPlayer) {
   if(depth == 0 || gameWrapper.game.gameOver()) {
     return positionValue(gameWrapper, startingPlayer);
   }
@@ -300,8 +302,13 @@ float agent1::Agent1::minimax(nichess_wrapper::GameWrapper& gameWrapper, int dep
     float value = -std::numeric_limits<float>::max();
     for(PlayerAction pa : ala) {
       gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
-      value = std::max(value, minimax(gameWrapper, depth - 1, false, startingPlayer));
+      value = std::max(value, alphabeta(gameWrapper, alpha, beta, depth - 1, false, startingPlayer));
       gameWrapper.game.undoLastAction();
+      numNodes++;
+      if(value > beta) {
+        break;
+      }
+      alpha = std::max(alpha, value);
     }
     return value;
   } else {
@@ -309,8 +316,13 @@ float agent1::Agent1::minimax(nichess_wrapper::GameWrapper& gameWrapper, int dep
     float value = std::numeric_limits<float>::max();
     for(PlayerAction pa : ala) {
       gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
-      value = std::min(value, minimax(gameWrapper, depth - 1, true, startingPlayer));
+      value = std::min(value, alphabeta(gameWrapper, alpha, beta, depth - 1, true, startingPlayer));
       gameWrapper.game.undoLastAction();
+      numNodes++;
+      if(value < alpha) {
+        break;
+      }
+      beta = std::min(beta, value);
     }
     return value;
 
@@ -323,6 +335,7 @@ agent1::Agent1::Agent1() {
 
 PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWrapper, int searchDepth) {
   assert(searchDepth > 0);
+  numNodes = 0;
   std::vector<PlayerAction> ala = gameWrapper.usefulLegalActionsWithoutWalls();
   float bestValue = -std::numeric_limits<float>::max();
   PlayerAction bestAction = ala[0];
@@ -330,13 +343,16 @@ PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWra
   Player startingPlayer = gameWrapper.game.getCurrentPlayer();
   for(PlayerAction pa : ala) {
     gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
-    value = minimax(gameWrapper, searchDepth - 1, false, startingPlayer);
+    float alpha = -std::numeric_limits<float>::max();
+    float beta = std::numeric_limits<float>::max();
+    value = alphabeta(gameWrapper, alpha, beta, searchDepth - 1, false, startingPlayer);
     if(value > bestValue) {
       bestValue = value;
       bestAction = pa;
     }
     gameWrapper.game.undoLastAction();
+    numNodes++;
   }
-
+  std::cout << "Number of nodes explored: " << numNodes << "\n";
   return bestAction;
 }

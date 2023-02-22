@@ -15,7 +15,7 @@ class Agent1 {
 
     Agent1();
     PlayerAction computeAction(nichess_wrapper::GameWrapper& gameWrapper, int searchDepth);
-    float minimax(nichess_wrapper::GameWrapper& gameWrapper, int depth, bool maximizingPlayer, Player startingPlayer);
+    float alphabeta(nichess_wrapper::GameWrapper& gameWrapper, float alpha, float beta, int depth, bool maximizingPlayer, Player startingPlayer);
     float positionValue(nichess_wrapper::GameWrapper& gameWrapper, Player player);
 };
 

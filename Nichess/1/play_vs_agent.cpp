@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <limits>
 #include <map>
+#include <chrono>
 
 #include "nichess/nichess.hpp"
 #include "nichess_wrapper.hpp"
@@ -74,7 +75,10 @@ int main() {
     myMove(gameWrapper);
     gameOver = gameWrapper.game.gameOver();
     if(!gameOver) {
+      std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
       PlayerAction oa = opponent.computeAction(gameWrapper, 3);
+      std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+      std::cout << "Calculating time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
       gameWrapper.game.makeAction(oa.moveSrcIdx, oa.moveDstIdx, oa.abilitySrcIdx, oa.abilityDstIdx);
       gameOver = gameWrapper.game.gameOver();
     }
