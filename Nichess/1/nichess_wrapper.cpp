@@ -476,7 +476,7 @@ std::vector<PlayerAction> nichess_wrapper::GameWrapper::usefulLegalActionsWithou
               break;
           }
           break;
-        // pawn can use abilities on enemy pieces, on allied walls and on empty squares
+        // pawn can use abilities on enemy pieces and on allied walls (REMOVED empty squares)
         case P1_PAWN:
           switch(destinationSquarePiece->type) {
             case P1_KING:
@@ -504,7 +504,7 @@ std::vector<PlayerAction> nichess_wrapper::GameWrapper::usefulLegalActionsWithou
             case P2_ASSASSIN:
               break;
             case NO_PIECE:
-              break;
+              continue;
             default:
               break;
           }
@@ -644,7 +644,7 @@ std::vector<PlayerAction> nichess_wrapper::GameWrapper::usefulLegalActionsWithou
               break;
           }
           break;
-        // pawn can use abilities on enemy pieces, on allied walls and on empty squares
+        // pawn can use abilities on enemy pieces and on allied walls (REMOVED empty squares)
         case P2_PAWN:
           switch(destinationSquarePiece->type) {
             case P1_KING:
@@ -672,7 +672,7 @@ std::vector<PlayerAction> nichess_wrapper::GameWrapper::usefulLegalActionsWithou
             case P2_ASSASSIN:
               continue;
             case NO_PIECE:
-              break;
+              continue;
             default:
               break;
           }
