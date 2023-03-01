@@ -18,7 +18,7 @@ int numNodes = 0;
 float pieceTypeToValueMultiplier(PieceType pt) {
   switch(pt) {
     case P1_KING:
-      return 30;
+      return 1000;
     case P1_MAGE:
       return  10; 
     case P1_PAWN:
@@ -30,7 +30,7 @@ float pieceTypeToValueMultiplier(PieceType pt) {
     case P1_ASSASSIN:
       return 15;
     case P2_KING:
-      return 30;
+      return 1000;
     case P2_MAGE:
       return 10;
     case P2_PAWN:
@@ -51,6 +51,7 @@ float pieceTypeToValueMultiplier(PieceType pt) {
 std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   std::vector<std::vector<float>> pieceTypeToIndexToSquareValue(NUM_PIECE_TYPE);
   int mostValuableX, mostValuableY, dx, dy, currentSquareIndex;
+  double t;
 
   // p1 king
   mostValuableX = 0;
@@ -59,12 +60,15 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       if(dx == 0 && dy == 0) {
         indexToP1KingSquareValue[currentSquareIndex] = 1;
       } else {
-        indexToP1KingSquareValue[currentSquareIndex] = 1 / (std::pow(dx, 2) + std::pow(dy, 2));
+        t = std::max(dx, dy);
+        t = 1 - 0.1 * t;
+        t = std::max(0.5, t);
+        indexToP1KingSquareValue[currentSquareIndex] = t;
       }
     }
   }
@@ -77,12 +81,15 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       if(dx == 0 && dy == 0) {
         indexToP1MageSquareValue[currentSquareIndex] = 1;
       } else {
-        indexToP1MageSquareValue[currentSquareIndex] = 1 / (std::pow(dx, 2) + std::pow(dy, 2));
+        t = std::max(dx, dy);
+        t = 1 - 0.1 * t;
+        t = std::max(0.5, t);
+        indexToP1MageSquareValue[currentSquareIndex] = t;
       }
     }
   }
@@ -95,12 +102,15 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       if(dx == 0 && dy == 0) {
         indexToP1PawnSquareValue[currentSquareIndex] = 1;
       } else {
-        indexToP1PawnSquareValue[currentSquareIndex] = 1 / (std::pow(dx, 2) + std::pow(dy, 2));
+        t = std::max(dx, dy);
+        t = 1 - 0.1 * t;
+        t = std::max(0.5, t);
+        indexToP1PawnSquareValue[currentSquareIndex] = t;
       }
     }
   }
@@ -113,12 +123,15 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       if(dx == 0 && dy == 0) {
         indexToP1WarriorSquareValue[currentSquareIndex] = 1;
       } else {
-        indexToP1WarriorSquareValue[currentSquareIndex] = 1 / (std::pow(dx, 2) + std::pow(dy, 2));
+        t = std::max(dx, dy);
+        t = 1 - 0.1 * t;
+        t = std::max(0.5, t);
+        indexToP1WarriorSquareValue[currentSquareIndex] = t;
       }
     }
   }
@@ -130,8 +143,8 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       indexToP1WallSquareValue[currentSquareIndex] = 1;
     }
   }
@@ -144,12 +157,15 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       if(dx == 0 && dy == 0) {
         indexToP1AssassinSquareValue[currentSquareIndex] = 1;
       } else {
-        indexToP1AssassinSquareValue[currentSquareIndex] = 1 / (std::pow(dx, 2) + std::pow(dy, 2));
+        t = std::max(dx, dy);
+        t = 1 - 0.1 * t;
+        t = std::max(0.5, t);
+        indexToP1AssassinSquareValue[currentSquareIndex] = t;
       }
     }
   }
@@ -162,12 +178,15 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       if(dx == 0 && dy == 0) {
         indexToP2KingSquareValue[currentSquareIndex] = 1;
       } else {
-        indexToP2KingSquareValue[currentSquareIndex] = 1 / (std::pow(dx, 2) + std::pow(dy, 2));
+        t = std::max(dx, dy);
+        t = 1 - 0.1 * t;
+        t = std::max(0.5, t);
+        indexToP2KingSquareValue[currentSquareIndex] = t;
       }
     }
   }
@@ -180,12 +199,15 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       if(dx == 0 && dy == 0) {
         indexToP2MageSquareValue[currentSquareIndex] = 1;
       } else {
-        indexToP2MageSquareValue[currentSquareIndex] = 1 / (std::pow(dx, 2) + std::pow(dy, 2));
+        t = std::max(dx, dy);
+        t = 1 - 0.1 * t;
+        t = std::max(0.5, t);
+        indexToP2MageSquareValue[currentSquareIndex] = t;
       }
     }
   }
@@ -198,12 +220,15 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       if(dx == 0 && dy == 0) {
         indexToP2PawnSquareValue[currentSquareIndex] = 1;
       } else {
-        indexToP2PawnSquareValue[currentSquareIndex] = 1 / (std::pow(dx, 2) + std::pow(dy, 2));
+        t = std::max(dx, dy);
+        t = 1 - 0.1 * t;
+        t = std::max(0.5, t);
+        indexToP2PawnSquareValue[currentSquareIndex] = t;
       }
     }
   }
@@ -216,12 +241,15 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       if(dx == 0 && dy == 0) {
         indexToP2WarriorSquareValue[currentSquareIndex] = 1;
       } else {
-        indexToP2WarriorSquareValue[currentSquareIndex] = 1 / (std::pow(dx, 2) + std::pow(dy, 2));
+        t = std::max(dx, dy);
+        t = 1 - 0.1 * t;
+        t = std::max(0.5, t);
+        indexToP2WarriorSquareValue[currentSquareIndex] = t;
       }
     }
   }
@@ -233,8 +261,8 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       indexToP2WallSquareValue[currentSquareIndex] = 1;
     }
   }
@@ -247,12 +275,15 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
       currentSquareIndex = coordinatesToBoardIndex(x, y);
-      dx = mostValuableX - x;
-      dy = mostValuableY - y;
+      dx = std::abs(mostValuableX - x);
+      dy = std::abs(mostValuableY - y);
       if(dx == 0 && dy == 0) {
         indexToP2AssassinSquareValue[currentSquareIndex] = 1;
       } else {
-        indexToP2AssassinSquareValue[currentSquareIndex] = 1 / (std::pow(dx, 2) + std::pow(dy, 2));
+        t = std::max(dx, dy);
+        t = 1 - 0.1 * t;
+        t = std::max(0.5, t);
+        indexToP2AssassinSquareValue[currentSquareIndex] = t;
       }
     }
   }
@@ -269,24 +300,24 @@ float agent1::Agent1::positionValue(nichess_wrapper::GameWrapper& gameWrapper, P
   std::vector<Piece*> p1Pieces = gameWrapper.game.getAllPiecesByPlayer(PLAYER_1);
   for(Piece* p : p1Pieces) {
     if(p->healthPoints <= 0) {
-      retval -= pieceTypeToValueMultiplier(p->type) * 100;
+      retval -= pieceTypeToValueMultiplier(p->type) * 10;
       continue;
     }
-    retval += pieceTypeToValueMultiplier(p->type) * p->healthPoints;
+    retval += pieceTypeToIndexToSquareValue[p->type][p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
     //if(p->type == P1_KING) continue;
     //retval += indexToP1SquareValueMap[p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
-    retval += 0.02 * pieceTypeToIndexToSquareValue[p->type][p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
+    //retval += 0.02 * pieceTypeToIndexToSquareValue[p->type][p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
   }
   std::vector<Piece*> p2Pieces = gameWrapper.game.getAllPiecesByPlayer(PLAYER_2);
   for(Piece* p : p2Pieces) {
     if(p->healthPoints <= 0) {
-      retval += pieceTypeToValueMultiplier(p->type) * 100;
+      retval += pieceTypeToValueMultiplier(p->type) * 10;
       continue;
     }
-    retval -= pieceTypeToValueMultiplier(p->type) * p->healthPoints;
+    retval -= pieceTypeToIndexToSquareValue[p->type][p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
     //if(p->type == P2_KING) continue;
     //retval -= indexToP2SquareValueMap[p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
-    retval -= 0.02 * pieceTypeToIndexToSquareValue[p->type][p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
+    //retval -= 0.02 * pieceTypeToIndexToSquareValue[p->type][p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
   }
   float m = 1;
   if(player == PLAYER_2) m = -1;
@@ -333,6 +364,19 @@ agent1::Agent1::Agent1() {
   pieceTypeToIndexToSquareValue = createPieceTypeToIndexToSquareValue();
 }
 
+class ActionValue {
+  public:
+    PlayerAction action;
+    float value;
+
+    ActionValue() { }
+    ActionValue(PlayerAction action, float value): action(action), value(value) { }
+};
+
+bool compareActionValue(ActionValue av1, ActionValue av2) {
+  return av1.value > av2.value;
+}
+
 PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWrapper, int searchDepth) {
   assert(searchDepth > 0);
   numNodes = 0;
@@ -341,6 +385,7 @@ PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWra
   PlayerAction bestAction = ala[0];
   float value;
   Player startingPlayer = gameWrapper.game.getCurrentPlayer();
+  std::vector<ActionValue> bestActionValues;
   for(PlayerAction pa : ala) {
     gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
     float alpha = -std::numeric_limits<float>::max();
@@ -350,9 +395,32 @@ PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWra
       bestValue = value;
       bestAction = pa;
     }
+    if(bestActionValues.size() < 5) {
+      ActionValue av = ActionValue(pa, value);
+      bestActionValues.push_back(av);
+      std::sort(bestActionValues.begin(), bestActionValues.end(), compareActionValue);
+    } else {
+      ActionValue currentAv;
+      for(int i = 0; i < bestActionValues.size(); i++) {
+        currentAv = bestActionValues[i];
+        if(value > currentAv.value) {
+          ActionValue newAv = ActionValue(pa, value);
+          bestActionValues.insert(bestActionValues.begin() + i, newAv);
+          bestActionValues.pop_back();
+          break;
+        }
+      }
+    }
     gameWrapper.game.undoLastAction();
     numNodes++;
   }
   std::cout << "Number of nodes explored: " << numNodes << "\n";
+  std::cout << "Best actions and their values:\n";
+  for(ActionValue av: bestActionValues) {
+    std::cout << "Action:\n";
+    av.action.print();
+    std::cout << "Value:\n";
+    std::cout << av.value << "\n";
+  }
   return bestAction;
 }

@@ -72,11 +72,20 @@ int main() {
     } else {
       std::cout << "Player to move: PLAYER_2 (lower-case letters)\n";
     }
-    myMove(gameWrapper);
+    //myMove(gameWrapper);
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+    PlayerAction oa = opponent.computeAction(gameWrapper, 4);
+    oa.print();
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "Calculating time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
+    gameWrapper.game.makeAction(oa.moveSrcIdx, oa.moveDstIdx, oa.abilitySrcIdx, oa.abilityDstIdx);
+    gameWrapper.game.print();
+
     gameOver = gameWrapper.game.gameOver();
     if(!gameOver) {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-      PlayerAction oa = opponent.computeAction(gameWrapper, 3);
+      PlayerAction oa = opponent.computeAction(gameWrapper, 4);
+      oa.print();
       std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
       std::cout << "Calculating time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
       gameWrapper.game.makeAction(oa.moveSrcIdx, oa.moveDstIdx, oa.abilitySrcIdx, oa.abilityDstIdx);
