@@ -74,7 +74,7 @@ int main() {
     }
     //myMove(gameWrapper);
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    PlayerAction oa = opponent.computeAction(gameWrapper, 4);
+    PlayerAction oa = opponent.computeAction(gameWrapper, 5000);
     oa.print();
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Calculating time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
@@ -84,7 +84,7 @@ int main() {
     gameOver = gameWrapper.game.gameOver();
     if(!gameOver) {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-      PlayerAction oa = opponent.computeAction(gameWrapper, 4);
+      PlayerAction oa = opponent.computeAction(gameWrapper, 5000);
       oa.print();
       std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
       std::cout << "Calculating time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
@@ -101,5 +101,14 @@ int main() {
       std::cout << "Player 2 won\n";
     }
   }
+  /*
+  agent1::Agent1 ag = agent1::Agent1();
+  std::string position;
+  std::cout << "Enter encoded position: ";
+  std::cin >> position; // get user input from the keyboard
+  Player p = PLAYER_2;
+  float val = ag.positionValueFromString(position, p);
+  std::cout << val;
+  */
   return 0;
 }

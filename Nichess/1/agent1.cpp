@@ -13,8 +13,6 @@
 
 using namespace nichess;
 
-int numNodes = 0;
-
 float pieceTypeToValueMultiplier(PieceType pt) {
   switch(pt) {
     case P1_KING:
@@ -235,8 +233,8 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
   pieceTypeToIndexToSquareValue[P2_PAWN] = indexToP2PawnSquareValue;
 
   // p2 warrior
-  mostValuableX = 2;
-  mostValuableY = 2;
+  mostValuableX = 5;
+  mostValuableY = 5;
   std::vector<float> indexToP2WarriorSquareValue(NUM_ROWS * NUM_COLUMNS);
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
@@ -270,7 +268,7 @@ std::vector<std::vector<float>> createPieceTypeToIndexToSquareValue() {
 
   // p2 assassin
   mostValuableX = 0;
-  mostValuableY = 5;
+  mostValuableY = 0;
   std::vector<float> indexToP2AssassinSquareValue(NUM_ROWS * NUM_COLUMNS);
   for(int y = 0; y < NUM_ROWS; y++) {
     for(int x = 0; x < NUM_COLUMNS; x++) {
@@ -300,7 +298,7 @@ float agent1::Agent1::positionValue(nichess_wrapper::GameWrapper& gameWrapper, P
   std::vector<Piece*> p1Pieces = gameWrapper.game.getAllPiecesByPlayer(PLAYER_1);
   for(Piece* p : p1Pieces) {
     if(p->healthPoints <= 0) {
-      retval -= pieceTypeToValueMultiplier(p->type) * 10;
+      retval -= pieceTypeToValueMultiplier(p->type) * 100;
       continue;
     }
     retval += pieceTypeToIndexToSquareValue[p->type][p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
@@ -311,7 +309,7 @@ float agent1::Agent1::positionValue(nichess_wrapper::GameWrapper& gameWrapper, P
   std::vector<Piece*> p2Pieces = gameWrapper.game.getAllPiecesByPlayer(PLAYER_2);
   for(Piece* p : p2Pieces) {
     if(p->healthPoints <= 0) {
-      retval += pieceTypeToValueMultiplier(p->type) * 10;
+      retval += pieceTypeToValueMultiplier(p->type) * 100;
       continue;
     }
     retval -= pieceTypeToIndexToSquareValue[p->type][p->squareIndex] * pieceTypeToValueMultiplier(p->type) * p->healthPoints;
@@ -324,7 +322,20 @@ float agent1::Agent1::positionValue(nichess_wrapper::GameWrapper& gameWrapper, P
   return m * retval;
 }
 
+float agent1::Agent1::positionValueFromString(std::string encodedPosition, Player player) {
+  nichess_wrapper::GameWrapper gw = nichess_wrapper::GameWrapper();
+  gw.game.boardFromString(encodedPosition);
+  gw.game.print();
+  return positionValue(gw, player);
+}
+
 float agent1::Agent1::alphabeta(nichess_wrapper::GameWrapper& gameWrapper, float alpha, float beta, int depth, bool maximizingPlayer, Player startingPlayer) {
+  if(this->numNodesSearched % this->numNodesBeforeTimeCheck == 0 &&
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - this->startTime).count() >= this->maxThinkingTime) {
+    this->abortSearch = true;
+    return 0;
+  }
+			
   if(depth == 0 || gameWrapper.game.gameOver()) {
     return positionValue(gameWrapper, startingPlayer);
   }
@@ -335,7 +346,8 @@ float agent1::Agent1::alphabeta(nichess_wrapper::GameWrapper& gameWrapper, float
       gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
       value = std::max(value, alphabeta(gameWrapper, alpha, beta, depth - 1, false, startingPlayer));
       gameWrapper.game.undoLastAction();
-      numNodes++;
+      numNodesSearched++;
+      if(this->abortSearch) return 0;
       if(value > beta) {
         break;
       }
@@ -349,14 +361,14 @@ float agent1::Agent1::alphabeta(nichess_wrapper::GameWrapper& gameWrapper, float
       gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
       value = std::min(value, alphabeta(gameWrapper, alpha, beta, depth - 1, true, startingPlayer));
       gameWrapper.game.undoLastAction();
-      numNodes++;
+      numNodesSearched++;
+      if(this->abortSearch) return 0;
       if(value < alpha) {
         break;
       }
       beta = std::min(beta, value);
     }
     return value;
-
   }
 }
 
@@ -377,9 +389,7 @@ bool compareActionValue(ActionValue av1, ActionValue av2) {
   return av1.value > av2.value;
 }
 
-PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWrapper, int searchDepth) {
-  assert(searchDepth > 0);
-  numNodes = 0;
+PlayerAction agent1::Agent1::runAlphaBetaSearch(nichess_wrapper::GameWrapper& gameWrapper, int searchDepth) {
   std::vector<PlayerAction> ala = gameWrapper.usefulLegalActionsWithoutWalls();
   float bestValue = -std::numeric_limits<float>::max();
   PlayerAction bestAction = ala[0];
@@ -391,10 +401,14 @@ PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWra
     float alpha = -std::numeric_limits<float>::max();
     float beta = std::numeric_limits<float>::max();
     value = alphabeta(gameWrapper, alpha, beta, searchDepth - 1, false, startingPlayer);
+    gameWrapper.game.undoLastAction();
+    numNodesSearched++;
+    if(this->abortSearch) return bestAction;
     if(value > bestValue) {
       bestValue = value;
       bestAction = pa;
     }
+
     if(bestActionValues.size() < 5) {
       ActionValue av = ActionValue(pa, value);
       bestActionValues.push_back(av);
@@ -411,10 +425,9 @@ PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWra
         }
       }
     }
-    gameWrapper.game.undoLastAction();
-    numNodes++;
   }
-  std::cout << "Number of nodes explored: " << numNodes << "\n";
+  std::cout << "Number of nodes explored: " << numNodesSearched << "\n";
+  /*
   std::cout << "Best actions and their values:\n";
   for(ActionValue av: bestActionValues) {
     std::cout << "Action:\n";
@@ -422,5 +435,28 @@ PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWra
     std::cout << "Value:\n";
     std::cout << av.value << "\n";
   }
+  */
   return bestAction;
+}
+
+PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWrapper, int maxThinkingTime) {
+  assert(maxThinkingTime > 300);
+  this->startTime = std::chrono::system_clock::now();
+  this->numNodesSearched = 0;
+  this->abortSearch = false;
+  this->maxThinkingTime = maxThinkingTime;
+  PlayerAction allTimeBestAction, currentBestAction;
+  int i = 1;
+  while(true) {
+    std::cout << "Searching with max depth " << i << "\n";
+    currentBestAction = runAlphaBetaSearch(gameWrapper, i);
+    if(!this->abortSearch) { // only save best action if search was completed
+      allTimeBestAction = currentBestAction;
+    } else {
+      std::cout << "Search with depth " << i << " not completed. Using result from depth " << i-1 << ".\n";
+      break;
+    }
+    i++;
+  }
+  return allTimeBestAction;
 }
