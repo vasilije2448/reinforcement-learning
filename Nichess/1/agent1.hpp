@@ -24,6 +24,7 @@ class Agent1 {
 		PlayerAction runAlphaBetaSearch(nichess_wrapper::GameWrapper& gameWrapper, int searchDepth);
     float alphabeta(nichess_wrapper::GameWrapper& gameWrapper, float alpha, float beta, int depth, bool maximizingPlayer, Player startingPlayer);
     float positionValue(nichess_wrapper::GameWrapper& gameWrapper, Player player);
+    float quiescenceSearch(nichess_wrapper::GameWrapper& gameWrapper, bool maximizingPlayer, Player startingPlayer);
     float positionValueFromString(std::string position, Player player);
 };
 

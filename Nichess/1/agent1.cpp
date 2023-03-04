@@ -329,6 +329,39 @@ float agent1::Agent1::positionValueFromString(std::string encodedPosition, Playe
   return positionValue(gw, player);
 }
 
+float agent1::Agent1::quiescenceSearch(nichess_wrapper::GameWrapper& gameWrapper, bool maximizingPlayer, Player startingPlayer) {
+  if(this->numNodesSearched % this->numNodesBeforeTimeCheck == 0 &&
+      std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - this->startTime).count() >= this->maxThinkingTime) {
+    this->abortSearch = true;
+    return 0;
+  }
+
+  std::vector<PlayerAction> actions = gameWrapper.usefulLegalActionsWithoutMovesAndWalls();
+  if(actions.size() == 0) return positionValue(gameWrapper, startingPlayer);
+  
+  float value;
+  if(maximizingPlayer) {
+      value = -std::numeric_limits<float>::max();
+      for(PlayerAction pa : actions) {
+        gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
+        value = std::max(value, quiescenceSearch(gameWrapper, false, startingPlayer));
+        gameWrapper.game.undoLastAction();
+        numNodesSearched++;
+        if(this->abortSearch) return 0;
+      }
+    } else {
+      value = std::numeric_limits<float>::max();
+      for(PlayerAction pa : actions) {
+        gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
+        value = std::min(value, quiescenceSearch(gameWrapper, true, startingPlayer));
+        gameWrapper.game.undoLastAction();
+        numNodesSearched++;
+        if(this->abortSearch) return 0;
+      }
+    }
+  return value;
+}
+
 float agent1::Agent1::alphabeta(nichess_wrapper::GameWrapper& gameWrapper, float alpha, float beta, int depth, bool maximizingPlayer, Player startingPlayer) {
   if(this->numNodesSearched % this->numNodesBeforeTimeCheck == 0 &&
       std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - this->startTime).count() >= this->maxThinkingTime) {
@@ -337,7 +370,8 @@ float agent1::Agent1::alphabeta(nichess_wrapper::GameWrapper& gameWrapper, float
   }
 			
   if(depth == 0 || gameWrapper.game.gameOver()) {
-    return positionValue(gameWrapper, startingPlayer);
+    //return positionValue(gameWrapper, startingPlayer);
+    return quiescenceSearch(gameWrapper, !maximizingPlayer, startingPlayer);
   }
   if(maximizingPlayer) {
     std::vector<PlayerAction> ala = gameWrapper.usefulLegalActionsWithoutWalls();
@@ -446,6 +480,7 @@ PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWra
   this->abortSearch = false;
   this->maxThinkingTime = maxThinkingTime;
   PlayerAction allTimeBestAction, currentBestAction;
+  allTimeBestAction = PlayerAction(MOVE_SKIP, MOVE_SKIP, ABILITY_SKIP, ABILITY_SKIP);
   int i = 1;
   while(true) {
     std::cout << "Searching with max depth " << i << "\n";
@@ -453,6 +488,7 @@ PlayerAction agent1::Agent1::computeAction(nichess_wrapper::GameWrapper& gameWra
     if(!this->abortSearch) { // only save best action if search was completed
       allTimeBestAction = currentBestAction;
     } else {
+      std::cout << "Total number of nodes explored: " << this->numNodesSearched << "\n";
       std::cout << "Search with depth " << i << " not completed. Using result from depth " << i-1 << ".\n";
       break;
     }

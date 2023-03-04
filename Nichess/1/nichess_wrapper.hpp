@@ -14,6 +14,7 @@ class GameWrapper {
 
     GameWrapper();
     std::vector<PlayerAction> usefulLegalActionsWithoutWalls();
+    std::vector<PlayerAction> usefulLegalActionsWithoutMovesAndWalls();
 };
 
 } // namespace nichess_wrapper
