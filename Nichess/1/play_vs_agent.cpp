@@ -74,7 +74,7 @@ int main() {
     }
     //myMove(gameWrapper);
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    PlayerAction oa = opponent.computeAction(gameWrapper, 30000);
+    PlayerAction oa = opponent.computeAction(gameWrapper, 60000);
     oa.print();
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Calculating time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
@@ -84,7 +84,7 @@ int main() {
     gameOver = gameWrapper.game.gameOver();
     if(!gameOver) {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-      PlayerAction oa = opponent.computeAction(gameWrapper, 30000);
+      PlayerAction oa = opponent.computeAction(gameWrapper, 60000);
       oa.print();
       std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
       std::cout << "Calculating time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;

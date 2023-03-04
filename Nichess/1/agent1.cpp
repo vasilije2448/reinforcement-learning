@@ -339,25 +339,45 @@ float agent1::Agent1::quiescenceSearch(nichess_wrapper::GameWrapper& gameWrapper
   std::vector<PlayerAction> actions = gameWrapper.usefulLegalActionsWithoutMovesAndWalls();
   if(actions.size() == 0) return positionValue(gameWrapper, startingPlayer);
   
-  float value;
+  float value, currentValue, bestValue;
   if(maximizingPlayer) {
       value = -std::numeric_limits<float>::max();
+      // find best action after 1 step
+      PlayerAction bestAction = actions[0];
+      float bestValue = -std::numeric_limits<float>::max();
       for(PlayerAction pa : actions) {
         gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
-        value = std::max(value, quiescenceSearch(gameWrapper, false, startingPlayer));
+        currentValue = positionValue(gameWrapper, startingPlayer);
+        if(currentValue > bestValue) {
+          bestValue = currentValue;
+          bestAction = pa;
+        }
         gameWrapper.game.undoLastAction();
         numNodesSearched++;
         if(this->abortSearch) return 0;
       }
+      gameWrapper.game.makeAction(bestAction.moveSrcIdx, bestAction.moveDstIdx, bestAction.abilitySrcIdx, bestAction.abilityDstIdx);
+      value = std::max(value, quiescenceSearch(gameWrapper, false, startingPlayer));
+      gameWrapper.game.undoLastAction();
     } else {
       value = std::numeric_limits<float>::max();
+      // find best action after 1 step
+      PlayerAction bestAction = actions[0];
+      float bestValue = std::numeric_limits<float>::max();
       for(PlayerAction pa : actions) {
         gameWrapper.game.makeAction(pa.moveSrcIdx, pa.moveDstIdx, pa.abilitySrcIdx, pa.abilityDstIdx);
-        value = std::min(value, quiescenceSearch(gameWrapper, true, startingPlayer));
+        currentValue = positionValue(gameWrapper, startingPlayer);
+        if(currentValue < bestValue) {
+          bestValue = currentValue;
+          bestAction = pa;
+        }
         gameWrapper.game.undoLastAction();
         numNodesSearched++;
         if(this->abortSearch) return 0;
       }
+      gameWrapper.game.makeAction(bestAction.moveSrcIdx, bestAction.moveDstIdx, bestAction.abilitySrcIdx, bestAction.abilityDstIdx);
+      value = std::min(value, quiescenceSearch(gameWrapper, true, startingPlayer));
+      gameWrapper.game.undoLastAction();
     }
   return value;
 }
