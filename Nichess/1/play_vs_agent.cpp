@@ -52,48 +52,49 @@ void myMove(nichess_wrapper::GameWrapper& gameWrapper) {
       abilityDstIdx = coordinatesToBoardIndex(x4, y4);
     }
 
-    if(gameWrapper.game.isActionLegal(moveSrcIdx, moveDstIdx, abilitySrcIdx, abilityDstIdx)) {
-      gameWrapper.game.makeAction(moveSrcIdx, moveDstIdx, abilitySrcIdx, abilityDstIdx);
+    if(gameWrapper.game->isActionLegal(moveSrcIdx, moveDstIdx, abilitySrcIdx, abilityDstIdx)) {
+      gameWrapper.game->makeAction(moveSrcIdx, moveDstIdx, abilitySrcIdx, abilityDstIdx);
     } else {
       std::cout << "Illegal action. Try again.\n";
-      gameWrapper.game.print();
+      gameWrapper.game->print();
       myMove(gameWrapper);
     }
 }
 
 int main() {
   bool gameOver = false;
-  nichess_wrapper::GameWrapper gameWrapper = nichess_wrapper::GameWrapper();
+  GameCache gameCache = GameCache();
+  nichess_wrapper::GameWrapper gameWrapper = nichess_wrapper::GameWrapper(gameCache);
   agent1::Agent1 opponent = agent1::Agent1();
-  gameWrapper.game.print();
+  gameWrapper.game->print();
   while(!gameOver) {
-    if(gameWrapper.game.getCurrentPlayer() == PLAYER_1) {
+    if(gameWrapper.game->getCurrentPlayer() == PLAYER_1) {
       std::cout << "Player to move: PLAYER_1 (upper-case letters)\n";
     } else {
       std::cout << "Player to move: PLAYER_2 (lower-case letters)\n";
     }
     //myMove(gameWrapper);
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-    PlayerAction oa = opponent.computeAction(gameWrapper, 60000);
+    PlayerAction oa = opponent.computeAction(gameWrapper, 3000);
     oa.print();
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "Calculating time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
-    gameWrapper.game.makeAction(oa.moveSrcIdx, oa.moveDstIdx, oa.abilitySrcIdx, oa.abilityDstIdx);
-    gameWrapper.game.print();
+    gameWrapper.game->makeAction(oa.moveSrcIdx, oa.moveDstIdx, oa.abilitySrcIdx, oa.abilityDstIdx);
+    gameWrapper.game->print();
 
-    gameOver = gameWrapper.game.gameOver();
+    gameOver = gameWrapper.game->gameOver();
     if(!gameOver) {
       std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-      PlayerAction oa = opponent.computeAction(gameWrapper, 60000);
+      PlayerAction oa = opponent.computeAction(gameWrapper, 3000);
       oa.print();
       std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
       std::cout << "Calculating time: " << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() << "[ms]" << std::endl;
-      gameWrapper.game.makeAction(oa.moveSrcIdx, oa.moveDstIdx, oa.abilitySrcIdx, oa.abilityDstIdx);
-      gameOver = gameWrapper.game.gameOver();
+      gameWrapper.game->makeAction(oa.moveSrcIdx, oa.moveDstIdx, oa.abilitySrcIdx, oa.abilityDstIdx);
+      gameOver = gameWrapper.game->gameOver();
     }
-    gameWrapper.game.print();
+    gameWrapper.game->print();
   }
-  std::optional<Player> winner = gameWrapper.game.winner();
+  std::optional<Player> winner = gameWrapper.game->winner();
   if(winner) {
     if(winner.value() == PLAYER_1) {
       std::cout << "Player 1 won\n";

@@ -1,6 +1,6 @@
 # Nichess
 
-www.nichess.org
+https://www.nichess.org
 
 Requires C++17 and CMake 3.14 or newer.
 
